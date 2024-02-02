@@ -144,7 +144,7 @@ export default function Home() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24 main">
+    <main className="flex min-h-screen flex-col items-center justify-between p-24 main pt-40">
       <div className="flex flex-col items-center bg-gray-100 rounded-xl p-[5vw]">
         <h2 className="text-left font-bold text-3xl mb-3">TODO List</h2>
         <Input
@@ -168,7 +168,7 @@ export default function Home() {
               )}
               {todos.map((todo, index) => (
                 <div 
-                  className="flex space-between justify-between items-center h-[3vw] first:pt-0 last:pb-0 border-t first:border-t-0 border-gray-200 cursor-pointer" 
+                  className="flex space-between justify-between items-center h-16 first:pt-0 last:pb-0 border-t first:border-t-0 border-gray-200 cursor-pointer" 
                   key={todo.id}
                 >
                   <div 
@@ -200,10 +200,10 @@ export default function Home() {
         <div className="flex justify-between mt-2.5 w-[50vw] text-gray-600">
           <div>{remainItemNum} items left</div>
           {
-            isCompletingAll ? <div className="flex items-center justify-center w-[6vw]"><Loader /></div> : <div className="underline cursor-pointer w-[6vw]" onClick={() => remainItemNum > 0 ? completeAll() : null}>Complete All</div>
+            isCompletingAll ? <div className="flex items-center justify-center w-[6vw]"><Loader /></div> : <div className="underline cursor-pointer w-26" onClick={() => remainItemNum > 0 ? completeAll() : null}>Complete All</div>
           }
           {
-            isClearingCompleted ? <div className="flex w-[8vw] items-center justify-center"><Loader /></div> : <div className="underline cursor-pointer w-[8vw]" onClick={() => todos.length > remainItemNum ? clearCompleted() : null }>Clear Completed</div>
+            isClearingCompleted ? <div className="flex w-[8vw] items-center justify-center"><Loader /></div> : <div className="underline cursor-pointer w-26" onClick={() => todos.length > remainItemNum ? clearCompleted() : null }>Clear Completed</div>
           }
         </div>
       </div>
