@@ -1,113 +1,226 @@
-import Image from "next/image";
+"use client"
+
+import { useState, useEffect } from "react";
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '../components/ui/scroll-area';
+import { XCircle, Loader } from 'lucide-react';
+import { toast, ToastContainer, Bounce } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+type Todo = {
+  id: string;
+  title: string;
+  completed: boolean;
+  completed_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type Meta = {
+  status: number;
+  timestamp: string;
+}
+
+type Data = {}
+
+type Response = {
+  meta: Meta
+  data: Data
+}
 
 export default function Home() {
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [todoInput, setTodoInput] = useState<string>('');
+  const [remainItemNum, setRemainItemNum] = useState<number>(0);
+  const [isCompletingAll, setIsCompletingAll] = useState(false);
+  const [isClearingCompleted, setIsClearingCompleted] = useState(false);
+
+  const API_ENDPOINT = process.env.API_ENDPOINT
+
+  useEffect(() => {
+    fetchTodos();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const fetchTodos = async () => {
+    const response = await fetch(`${API_ENDPOINT}/todos`);
+    const {meta, data} = await response.json();
+    if (meta.status === 200) {
+      const remainItemNum = data.filter((d: Todo) => !d.completed).length
+      setRemainItemNum(remainItemNum);
+      setTodos(data);
+    }
+  };
+
+  const addTodo = async () => {
+    if (todoInput.trim() !== '') {
+      const response = await fetch(`${API_ENDPOINT}/todos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ title: todoInput }),
+      })
+      const {meta, data} = await response.json();
+      if (meta.status === 201) {
+        toast.success('Success')
+      } else {
+        toast.error(data.message);
+      }
+      setTodoInput('');
+      await fetchTodos()
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      addTodo();
+    }
+  };
+
+  const deleteTodo = async (id: string) => {
+    const response = await fetch(`${API_ENDPOINT}/todos/${id}`, {
+        method: 'DELETE',
+    })
+    const {meta, data} = await response.json();
+    if (meta.status === 200) {
+      toast.success('Success')
+    } else {
+      toast.error(data.message);
+    }
+    setTodoInput('');
+    await fetchTodos()
+  };
+
+  const completeTodo = async (id: string) => {
+    const response = await fetch(`${API_ENDPOINT}/todos/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ completed: true }),
+    })
+    
+    const {meta, data} = await response.json();
+    if (meta.status === 200) {
+      toast.success('Success')
+    } else {
+      toast.error(data.message);
+    }
+    await fetchTodos()
+  };
+
+  const completeAll = async () => {
+    setIsCompletingAll(true)
+    const response = await fetch(`${API_ENDPOINT}/todos/complete-batches`, {
+      method: 'PATCH',
+    })
+    
+    const {meta, data} = await response.json();
+    if (meta.status === 200) {
+      toast.success('Success')
+    } else {
+      toast.error(data.message);
+    }
+
+    setIsCompletingAll(false)
+    await fetchTodos()
+  };
+
+  const clearCompleted = async () => {
+    setIsClearingCompleted(true)
+    const response = await fetch(`${API_ENDPOINT}/todos/completed`, {
+      method: 'DELETE',
+    })
+    
+    const {meta, data} = await response.json();
+    if (meta.status === 200) {
+      toast.success('Success')
+    } else {
+      toast.error(data.message);
+    }
+    setIsClearingCompleted(false)
+    await fetchTodos()
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <main className="flex min-h-screen flex-col items-center justify-between p-24 main">
+      <div className="flex flex-col items-center bg-gray-100 rounded-xl p-[5vw]">
+        <h2 className="text-left font-bold text-3xl mb-3">TODO List</h2>
+        <Input
+          value={todoInput}
+          onChange={(e) => setTodoInput(e.target.value)}
+          onKeyDown={handleKeyPress}
+          placeholder="Press Enter to add a new todo"
+          className="mb-3"
+          maxLength={200}
+          type="text"
+        />
+        {todos.length === 0 ? (
+          <div className="flex rounded-md border items-center justify-center h-[50vh] w-[50vw]">
+            <p className="text-center italic text-gray-400 align-middle">Please add a todo item</p>
+          </div>
+        ) : (
+          <ScrollArea className="rounded-md border p-4 h-[50vh] w-[50vw]">
+            <div>
+              {todos.length === 0 && (
+                <p className="text-center italic text-gray-600">Please add a todo item</p>
+              )}
+              {todos.map((todo, index) => (
+                <div 
+                  className="flex space-between justify-between items-center h-[3vw] first:pt-0 last:pb-0 border-t first:border-t-0 border-gray-200 cursor-pointer" 
+                  key={todo.id}
+                >
+                  <div 
+                    className="flex items-center"
+                    onClick={() => todo.completed ? null : completeTodo(todo.id)}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={todo.completed}
+                      className="mr-2 br-50"
+                    />
+                    <div>
+                    {todo.completed ? <s className="text-gray-400">{todo.title}</s> : todo.title}
+                      <div className="text-xs text-gray-500">
+                        {todo.completed ? 'Completed at: ' + new Date(todo.completed_at).toLocaleString(): 'Created at: ' + new Date(todo.created_at).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <XCircle cursor={'pointer'} color="red"  onClick={() => deleteTodo(todo.id)}/>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        )}
+        
+        <div className="flex justify-between mt-2.5 w-[50vw] text-gray-600">
+          <div>{remainItemNum} items left</div>
+          {
+            isCompletingAll ? <div className="flex items-center justify-center w-[6vw]"><Loader /></div> : <div className="underline cursor-pointer w-[6vw]" onClick={() => remainItemNum > 0 ? completeAll() : null}>Complete All</div>
+          }
+          {
+            isClearingCompleted ? <div className="flex w-[8vw] items-center justify-center"><Loader /></div> : <div className="underline cursor-pointer w-[8vw]" onClick={() => todos.length > remainItemNum ? clearCompleted() : null }>Clear Completed</div>
+          }
         </div>
       </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-full sm:before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full sm:after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-balance`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+      
+      <ToastContainer 
+        position="bottom-center"
+        autoClose={1000}
+        hideProgressBar
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        transition={Bounce}
+      />
     </main>
   );
 }
