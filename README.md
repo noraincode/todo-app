@@ -4,7 +4,9 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 The Todo App front-end repo, build by Next.js
 
-[Live demo](https://todo-app-ev4n.vercel.app)
+Back-end repo: https://github.com/noraincode/todo-server
+
+[Live demo](https://todo-app-ev4n.vercel.app) - Powered by Vercel
 
 ## Getting Started
 
