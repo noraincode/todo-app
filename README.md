@@ -2,7 +2,7 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 ## About
 
-The Todo App front-eng repo, build by next.js
+The Todo App front-end repo, build by Next.js
 
 [Live demo](https://todo-app-ev4n.vercel.app)
 
